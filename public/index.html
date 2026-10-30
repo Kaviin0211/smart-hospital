@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Hospital – OPD</title>
+<style>
+:root{--navy:#12304a;--blue:#1769aa;--teal:#0d9488;--bg:#f2f6fa;--ink:#183044;--muted:#607487;--line:#dce5ec}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--ink)}
+header{background:var(--navy);color:white;padding:18px 5%;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{font-size:22px;margin:0}header small{color:#c8d8e5}
+main{max-width:1100px;margin:24px auto;padding:0 16px}.hero{background:white;border-radius:16px;padding:22px;margin-bottom:18px;box-shadow:0 4px 18px #17344b12}
+.hero h2{margin:0 0 8px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 0}
+button,.tab{border:0;border-radius:9px;padding:11px 15px;background:var(--blue);color:white;cursor:pointer;font-weight:600}
+button.secondary,.tab{background:#e4edf5;color:var(--navy)}button.green{background:var(--teal)}button.danger{background:#b42318}
+.tab.active{background:var(--navy);color:white}button:disabled,input:disabled,select:disabled{opacity:.6;cursor:not-allowed}
+.panel{display:none;background:white;border-radius:16px;padding:22px;box-shadow:0 4px 18px #17344b12}.panel.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+label{display:block;font-weight:600;margin:10px 0 5px}input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:16px}
+.notice{background:#eaf6f5;border-left:4px solid var(--teal);padding:12px;border-radius:8px;margin:12px 0}
+.warn{background:#fff6e5;border-left:4px solid #d69e2e;padding:12px;border-radius:8px;margin:12px 0}
+.err{background:#fdecea;border-left:4px solid #b42318;padding:12px;border-radius:8px;margin:12px 0;display:none}
+.token{font-size:42px;font-weight:800;color:var(--blue);letter-spacing:2px}
+table{width:100%;border-collapse:collapse;margin-top:12px}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);font-size:14px}th{background:#f3f7fa}
+.scroll{overflow-x:auto}.small{font-size:13px;color:var(--muted)}.pill{display:inline-block;padding:5px 9px;background:#e6f5ef;color:#087443;border-radius:20px;font-size:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.empty{color:var(--muted);padding:20px;text-align:center}
+footer{max-width:1100px;margin:20px auto;padding:0 16px 30px;color:var(--muted);font-size:12px}
+@media(max-width:600px){.panel,.hero{padding:16px}header h1{font-size:18px}.token{font-size:34px}}
+</style></head>
+<body>
+<header><div><h1>🏥 SMART HOSPITAL</h1><small>Digital OPD Registration & Patient Flow</small></div>
+<div><span id="who" class="small" style="color:#c8d8e5"></span> <button class="secondary" id="logoutBtn" style="display:none;padding:8px 12px" onclick="logout()">Log out</button> <select id="language" style="width:auto;padding:8px"><option value="en">English</option><option value="ta">தமிழ் (Tamil)</option></select></div></header>
+<main>
+<section class="hero"><h2 id="welcome">Less waiting. Better organized care.</h2><div id="subwelcome">Register, receive a token and follow the OPD process digitally.</div>
+<div class="warn"><b>Demo:</b> Use fictional patient details only. Do not enter real medical data.</div>
+<div class="tabs" id="tabs"></div></section>
+
+<section class="panel active" id="register"><h2 id="regTitle">Patient Registration</h2><p class="small">Scan the hospital QR code to open this page on your phone.</p>
+<form id="patientForm"><div class="grid">
+<div><label id="nameLbl">Full name *</label><input id="name" required maxlength="60" placeholder="Enter patient name"></div>
+<div><label id="ageLbl">Age *</label><input id="age" type="number" min="0" max="120" required placeholder="Age"></div>
+<div><label id="locLbl">Location *</label><input id="location" required maxlength="80" placeholder="Area / village"></div>
+<div><label id="mobLbl">Mobile number *</label><input id="mobile" required inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number"></div>
+<div><label id="emailLbl">Email (optional)</label><input id="email" type="email" maxlength="100" placeholder="Email address"></div>
+<div><label id="deptLbl">Department *</label><select id="department" required><option value="">Choose department</option><option>General Medicine</option><option>Paediatrics</option><option>Orthopaedics</option><option>Dermatology</option><option>ENT</option><option>Eye</option></select></div>
+</div><p><label style="font-weight:400"><input type="checkbox" id="assist" style="width:auto"> I need staff assistance / accessible registration</label></p>
+<div class="err" id="regErr"></div>
+<button class="green" type="submit" id="submitBtn">Generate OP Token</button></form>
+<div id="receipt" class="notice" style="display:none"><b>Registration successful</b><div class="token" id="tokenText"></div><div id="receiptText"></div><p class="small">Save your token number. Emergency patients must go directly to emergency services.</p><button onclick="window.print()" class="secondary">Print slip</button></div>
+<hr style="border:0;border-top:1px solid var(--line);margin:22px 0">
+<h3>Check my token status</h3><div class="grid"><div><label>Token (e.g. OP-001)</label><input id="stToken" placeholder="OP-001"></div><div><label>Mobile number</label><input id="stMobile" inputmode="numeric" maxlength="10" placeholder="10-digit mobile"></div></div>
+<div class="actions"><button class="secondary" onclick="checkStatus()">Check status</button></div><div id="stResult" class="notice" style="display:none"></div>
+</section>
+
+<section class="panel" id="login"><h2>Staff Login</h2><p class="small">For reception, doctor and pharmacy staff only. Ask the hospital admin for your PIN.</p>
+<div class="grid"><div><label>Role</label><select id="loginRole"><option value="reception">Reception</option><option value="doctor">Doctor</option><option value="pharmacy">Pharmacy & Billing</option></select></div><div><label>PIN</label><input id="loginPin" type="password" inputmode="numeric" autocomplete="off"></div></div>
+<div class="err" id="loginErr"></div><div class="actions"><button onclick="doLogin()">Log in</button></div></section>
+
+<section class="panel" id="reception"><h2>Reception Dashboard</h2><p class="small">All registrations from phones and the front desk appear here automatically.</p><div class="grid"><div class="notice"><b>Total registrations</b><div class="token" id="total">0</div></div><div class="notice"><b>Waiting</b><div class="token" id="waiting">0</div></div><div class="notice"><b>Currently called</b><div class="token" id="current">—</div></div></div>
+<div class="actions"><button onclick="callNext()">Call next token</button><button class="secondary" onclick="exportCSV()">Export CSV</button><button class="danger" onclick="clearAll()">Reset all data</button></div><div class="scroll" id="receptionTable"></div></section>
+
+<section class="panel" id="doctor"><h2>Doctor Dashboard</h2><p class="small">Add the consultation note and prescription. Saving sends the patient to the pharmacy, where billing is handled.</p><div id="doctorList"></div></section>
+
+<section class="panel" id="pharmacy"><h2>Pharmacy & Billing</h2><p class="small">Set the consultation fee, add medicines dispensed, choose payment mode and mark the bill as paid. Paid bills are locked.</p><div id="pharmacyList"></div></section>
+</main><footer>Prototype for classroom presentation. Not connected to a real hospital system, ABHA, payment gateway or pharmacy inventory.</footer>
+
+<script>
+const $=id=>document.getElementById(id);
+let auth=sessionStorage.getItem('sh_auth')||'',role=sessionStorage.getItem('sh_role')||'',patients=[],drafts={},docDirty=false;
+const ROLE_TABS={reception:['reception'],doctor:['doctor'],pharmacy:['pharmacy']};
+const NAMES={register:'Patient Registration',login:'Staff Login',reception:'Reception Dashboard',doctor:'Doctor Dashboard',pharmacy:'Pharmacy & Billing'};
+const translations={en:{welcome:'Less waiting. Better organized care.',sub:'Register, receive a token and follow the OPD process digitally.',reg:'Patient Registration',name:'Full name *',age:'Age *',loc:'Location *',mob:'Mobile number *',email:'Email (optional)',dept:'Department *',submit:'Generate OP Token'},ta:{welcome:'காத்திருப்பு குறைவு. சிறந்த மருத்துவ சேவை.',sub:'பதிவு செய்து, டோக்கன் பெற்று, OPD செயல்முறையை எளிதாகப் பின்பற்றுங்கள்.',reg:'நோயாளர் பதிவு',name:'முழுப் பெயர் *',age:'வயது *',loc:'இருப்பிடம் *',mob:'கைபேசி எண் *',email:'மின்னஞ்சல் (விருப்பம்)',dept:'பிரிவு *',submit:'OP டோக்கன் உருவாக்கு'}};
+$('language').addEventListener('change',e=>{let t=translations[e.target.value];$('welcome').textContent=t.welcome;$('subwelcome').textContent=t.sub;$('regTitle').textContent=t.reg;$('nameLbl').textContent=t.name;$('ageLbl').textContent=t.age;$('locLbl').textContent=t.loc;$('mobLbl').textContent=t.mob;$('emailLbl').textContent=t.email;$('deptLbl').textContent=t.dept;$('submitBtn').textContent=t.submit;});
+
+// ---------- API ----------
+async function api(path,opt={}){
+  const r=await fetch('/api'+path,{method:opt.method||'GET',headers:{'Content-Type':'application/json',...(auth?{Authorization:'Bearer '+auth}:{})},body:opt.body?JSON.stringify(opt.body):undefined});
+  const isJson=(r.headers.get('content-type')||'').includes('json');
+  const d=isJson?await r.json():await r.blob();
+  if(r.status===401&&auth){logout();throw new Error('Session expired. Please log in again.');}
+  if(!r.ok)throw new Error((d&&d.error)||'Request failed');
+  return d;
+}
+const showErr=(id,m)=>{const e=$(id);e.textContent=m||'';e.style.display=m?'block':'none';};
+
+// ---------- tabs / login ----------
+function buildTabs(){
+  const t=['register',...(role?ROLE_TABS[role]:['login'])];
+  $('tabs').innerHTML=t.map(x=>`<button class="tab" data-tab="${x}">${NAMES[x]}</button>`).join('');
+  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>show(b.dataset.tab));
+  $('who').textContent=role?('Logged in: '+role):'';$('logoutBtn').style.display=role?'':'none';
+}
+function show(tab){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===tab));
+  if(['reception','doctor','pharmacy'].includes(tab))refresh(true);
+}
+const current=()=>(document.querySelector('.panel.active')||{}).id;
+async function doLogin(){
+  try{const d=await api('/login',{method:'POST',body:{role:$('loginRole').value,pin:$('loginPin').value}});
+    auth=d.token;role=d.role;sessionStorage.setItem('sh_auth',auth);sessionStorage.setItem('sh_role',role);$('loginPin').value='';showErr('loginErr','');buildTabs();show(ROLE_TABS[role][0]);
+  }catch(e){showErr('loginErr',e.message);}
+}
+function logout(){auth='';role='';patients=[];drafts={};sessionStorage.clear();buildTabs();show('register');}
+
+// ---------- registration (public) ----------
+$('patientForm').onsubmit=async e=>{
+  e.preventDefault();showErr('regErr','');$('submitBtn').disabled=true;
+  try{const d=await api('/register',{method:'POST',body:{name:$('name').value,age:$('age').value,location:$('location').value,mobile:$('mobile').value,email:$('email').value,department:$('department').value,assistance:$('assist').checked}});
+    $('tokenText').textContent=d.token;$('receiptText').textContent=d.name+' • '+d.department+' • '+d.status;$('receipt').style.display='block';$('stToken').value=d.token;$('stMobile').value=$('mobile').value;$('patientForm').reset();
+  }catch(err){showErr('regErr',err.message);}
+  $('submitBtn').disabled=false;
+};
+async function checkStatus(){
+  const b=$('stResult');b.style.display='block';
+  try{const d=await api('/status?token='+encodeURIComponent($('stToken').value)+'&mobile='+encodeURIComponent($('stMobile').value));
+    b.innerHTML=`<b>${esc(d.token)} – ${esc(d.name)}</b> (${esc(d.department)})<br>Status: <b>${esc(d.status)}</b>${d.status==='Waiting'?' • Patients ahead of you: <b>'+d.waitingAhead+'</b>':''}`;
+  }catch(e){b.textContent=e.message;}
+}
+
+// ---------- data refresh ----------
+async function refresh(force){
+  if(!role)return;const tab=current();
+  if(!['reception','doctor','pharmacy'].includes(tab))return;
+  if(!force&&((tab==='doctor'&&docDirty)||(tab==='pharmacy'&&Object.keys(drafts).length)))return;
+  try{patients=await api('/patients');render();}catch(e){}
+}
+setInterval(()=>refresh(false),5000);
+
+function render(){
+  if(role==='reception'){
+    $('total').textContent=patients.length;$('waiting').textContent=patients.filter(p=>p.status==='Waiting').length;
+    $('current').textContent=(patients.filter(p=>p.status==='Called').slice(-1)[0]||{}).token||'—';
+    const rows=patients.map(p=>`<tr><td>${esc(p.token)}</td><td>${esc(p.name)}</td><td>${esc(p.age)}</td><td>${esc(p.location)}</td><td>${esc(p.mobile)}</td><td>${esc(p.department)}</td><td>${esc(p.status)}</td><td>${p.assistance?'Assist':''}</td></tr>`).join('');
+    $('receptionTable').innerHTML=patients.length?`<table><tr><th>Token</th><th>Name</th><th>Age</th><th>Location</th><th>Mobile</th><th>Department</th><th>Status</th><th>Support</th></tr>${rows}</table>`:'<div class="empty">No registrations yet.</div>';
+  }
+  if(role==='doctor'){
+    $('doctorList').innerHTML=patients.length?patients.map(p=>`<div class="notice"><b>${esc(p.token)} – ${esc(p.name)}</b> (${esc(p.age)} yrs, ${esc(p.department)}) <span class="pill">${esc(p.status)}</span><div class="grid"><div><label>Consultation note</label><input id="note${p.id}" value="${esc(p.note)}" placeholder="Diagnosis / note"></div><div><label>Prescription / medicine instructions</label><textarea id="med${p.id}" rows="3" placeholder="Medicine, dose, timing, duration">${esc(p.medicines)}</textarea></div></div><div class="actions"><button onclick="doctorSave('${p.id}')">Save consultation & send to pharmacy</button></div></div>`).join(''):'<div class="empty">No patients registered.</div>';
+    docDirty=false;
+  }
+  if(role==='pharmacy'){
+    $('pharmacyList').innerHTML=patients.map(pharmCard).join('')||'<div class="empty">No consultations yet. The doctor must save the consultation first.</div>';
+  }
+}
+$('doctorList').addEventListener('input',()=>docDirty=true);
+
+// ---------- actions ----------
+async function callNext(){try{const p=await api('/call-next',{method:'POST'});speakPatient(p);refresh(true);}catch(e){alert(e.message);}}
+async function doctorSave(id){
+  try{await api(`/patients/${id}/consult`,{method:'PUT',body:{note:$('note'+id).value,medicines:$('med'+id).value}});docDirty=false;alert('Saved and sent to pharmacy.');refresh(true);}catch(e){alert(e.message);}
+}
+async function exportCSV(){
+  try{const b=await api('/export.csv');const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='smart_hospital.csv';document.body.appendChild(a);a.click();a.remove();}catch(e){alert(e.message);}
+}
+async function clearAll(){if(confirm('Delete ALL records permanently?')){try{await api('/reset',{method:'POST'});refresh(true);}catch(e){alert(e.message);}}}
+
+// ---------- pharmacy billing ----------
+const draftOf=p=>drafts[p.id]||{fee:p.bill.fee,items:p.bill.items.map(i=>({...i})),mode:p.bill.mode};
+const edit=id=>drafts[id]||(drafts[id]=draftOf(patients.find(x=>x.id===id)));
+const sum=d=>(Number(d.fee)||0)+d.items.reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0);
+function pharmCard(p){
+  const paid=p.bill.status==='Paid',d=draftOf(p),dis=paid?'disabled':'';
+  const rows=d.items.map((i,k)=>`<tr><td><input value="${esc(i.name)}" ${dis} oninput="setItem('${p.id}',${k},'name',this.value)" placeholder="Medicine"></td><td style="width:80px"><input type="number" min="1" value="${esc(i.qty)}" ${dis} oninput="setItem('${p.id}',${k},'qty',this.value)"></td><td style="width:110px"><input type="number" min="0" step="0.01" value="${esc(i.price)}" ${dis} oninput="setItem('${p.id}',${k},'price',this.value)"></td><td>${paid?'':`<button class="danger" style="padding:8px" onclick="delItem('${p.id}',${k})">✕</button>`}</td></tr>`).join('');
+  return `<div class="notice"><b>${esc(p.token)} – ${esc(p.name)}</b> <span class="pill">${esc(p.bill.status)}</span>
+<p><b>Prescription:</b> ${esc(p.medicines||'Not entered by doctor')}</p><p><b>Consultation note:</b> ${esc(p.note||'—')}</p>
+<div class="grid"><div><label>Consultation fee (₹)</label><input type="number" min="0" step="1" value="${esc(d.fee)}" ${dis} oninput="setFee('${p.id}',this.value)"></div>
+<div><label>Payment mode</label><select ${dis} onchange="setMode('${p.id}',this.value)"><option value="">Select</option>${['Cash','UPI','Card'].map(m=>`<option ${d.mode===m?'selected':''}>${m}</option>`).join('')}</select></div></div>
+<div class="scroll"><table><tr><th>Medicine</th><th>Qty</th><th>Price ₹</th><th></th></tr>${rows}</table></div>
+${paid?'':`<div class="actions"><button class="secondary" onclick="addItem('${p.id}')">+ Add medicine</button></div>`}
+<p style="font-size:18px">Total: <b id="tot${p.id}">₹${sum(d).toFixed(2)}</b></p>
+<div class="actions">${paid?'':`<button onclick="saveBill('${p.id}',false)">Save bill</button><button class="green" onclick="saveBill('${p.id}',true)">Mark as paid</button>`}
+<button class="secondary" onclick="downloadBill('${p.id}')">Download bill receipt</button><button class="secondary" onclick="downloadPrescription('${p.id}')">Download prescription</button></div></div>`;
+}
+const upd=id=>{const t=$('tot'+id);if(t)t.textContent='₹'+sum(drafts[id]).toFixed(2);};
+function setFee(id,v){edit(id).fee=v;upd(id);}
+function setMode(id,v){edit(id).mode=v;}
+function setItem(id,k,key,v){edit(id).items[k][key]=v;upd(id);}
+function addItem(id){edit(id).items.push({name:'',qty:1,price:0});render();}
+function delItem(id,k){edit(id).items.splice(k,1);render();}
+async function saveBill(id,pay){
+  const d=edit(id);
+  if(pay&&!confirm('Mark as paid? The bill will be locked.'))return;
+  try{await api(`/patients/${id}/bill`,{method:'PUT',body:{fee:d.fee,items:d.items,mode:d.mode,pay}});delete drafts[id];await refresh(true);}catch(e){alert(e.message);}
+}
+
+// ---------- documents ----------
+function downloadDocument(filename,title,bodyHtml){
+  const html='<!doctype html><html><head><meta charset="utf-8"><title>'+esc(title)+'</title><style>body{font:16px Arial,sans-serif;max-width:760px;margin:35px auto;padding:24px;color:#183044}h1{color:#12304a}hr{border:0;border-top:1px solid #ccc}pre{white-space:pre-wrap;font:16px Arial}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #ddd;padding:6px;text-align:left}small{color:#555}</style></head><body>'+bodyHtml+'<hr><small>Smart Hospital OPD Demo — sample document only, not a real medical or payment record.</small></body></html>';
+  const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'})),a=document.createElement('a');
+  a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function downloadBill(id){
+  const p=patients.find(x=>x.id===id);if(!p)return;
+  if(p.bill.status!=='Paid'){alert('Mark the bill as paid before downloading the receipt.');return;}
+  const items=p.bill.items.map(i=>`<tr><td>${esc(i.name)}</td><td>${esc(i.qty)}</td><td>₹${Number(i.price).toFixed(2)}</td><td>₹${(i.qty*i.price).toFixed(2)}</td></tr>`).join('');
+  const t=p.bill.fee+p.bill.items.reduce((s,i)=>s+i.qty*i.price,0);
+  downloadDocument(p.token+'_bill_receipt.html','Bill Receipt',`<h1>SMART HOSPITAL</h1><h2>Bill Payment Receipt</h2><p><b>Receipt:</b> ${esc(p.token)}-BILL</p><p><b>Patient:</b> ${esc(p.name)} (${esc(p.age)} yrs)</p><p><b>Department:</b> ${esc(p.department)}</p><table><tr><th>Item</th><th>Qty</th><th>Price</th><th>Amount</th></tr><tr><td>Consultation fee</td><td>1</td><td>₹${p.bill.fee.toFixed(2)}</td><td>₹${p.bill.fee.toFixed(2)}</td></tr>${items}<tr><td colspan="3"><b>Total</b></td><td><b>₹${t.toFixed(2)}</b></td></tr></table><p><b>Payment:</b> PAID via ${esc(p.bill.mode)} on ${esc(p.bill.paidAt)}</p>`);
+}
+function downloadPrescription(id){
+  const p=patients.find(x=>x.id===id);if(!p)return;
+  if(!p.medicines){alert('The doctor has not entered prescription instructions yet.');return;}
+  downloadDocument(p.token+'_prescription.html','Doctor Prescription',`<h1>SMART HOSPITAL</h1><h2>Doctor Prescription</h2><p><b>Patient:</b> ${esc(p.name)}</p><p><b>Age:</b> ${esc(p.age)}</p><p><b>Token:</b> ${esc(p.token)}</p><p><b>Department:</b> ${esc(p.department)}</p><p><b>Date:</b> ${esc(p.consultedAt||'')}</p><h3>Doctor's instructions</h3><pre>${esc(p.medicines)}</pre><h3>Consultation note</h3><pre>${esc(p.note||'—')}</pre>`);
+}
+function speakPatient(p){
+  if(!('speechSynthesis' in window))return;
+  speechSynthesis.cancel();const ta=$('language').value==='ta',lang=ta?'ta-IN':'en-IN';
+  const m=new SpeechSynthesisUtterance(ta?`டோக்கன் ${p.token}. ${p.name}, தயவுசெய்து மருத்துவரை அணுகவும்.`:`Token ${p.token}. ${p.name}, please proceed to the doctor.`);
+  m.lang=lang;m.rate=0.9;speechSynthesis.speak(m);
+}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+buildTabs();if(role){show(ROLE_TABS[role][0]);}
+</script></body></html>

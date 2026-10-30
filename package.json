@@ -1,0 +1,8 @@
+{
+  "name": "smart-hospital-opd",
+  "version": "1.0.0",
+  "description": "Smart Hospital OPD - registration, reception, doctor, pharmacy & billing",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}
